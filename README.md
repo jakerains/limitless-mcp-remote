@@ -4,9 +4,9 @@
 
 [![Deploy to Cloudflare Workers](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/genaijake/limitless-mcp-remote)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Status: In Development](https://img.shields.io/badge/Status-In%20Development-orange.svg)](https://github.com/genaijake/limitless-mcp-remote)
+[![Status: Production Ready](https://img.shields.io/badge/Status-Production%20Ready-green.svg)](https://github.com/genaijake/limitless-mcp-remote)
 
-> ⚠️ **Status**: Core infrastructure is complete, but MCP protocol implementation needs refinement. See [Known Issues](#-known-issues) below.
+> ✅ **Status**: Fully functional MCP server ready for production use with your Limitless API key.
 
 ## ✨ Features
 
@@ -19,25 +19,14 @@
 
 ## 🚀 Quick Start
 
-### Connect to the Live Server
-
-Use this URL format with your Limitless API key:
-
+**Production Server URL:**
 ```
-https://limitless-mcp-remote.genaijake.workers.dev/{YOUR_LIMITLESS_API_KEY}/sse
+https://limitless-mcp-remote.genaijake.workers.dev
 ```
 
-**Example**:
-```
-https://limitless-mcp-remote.genaijake.workers.dev/12345678-1234-5678-9abc-123456789012/sse
-```
-
-### Supported Clients
-
-- **Claude Desktop** - Add to your MCP configuration
-- **AI Playground** - Connect directly via URL
-- **MCP Inspector** - For testing and development
-- **Any MCP Client** - Following the standard protocol
+**Supported Transports:**
+- **StreamableHttp** (recommended): `/mcp?api_key=YOUR_API_KEY`
+- **SSE** (legacy): `/sse?api_key=YOUR_API_KEY`
 
 ## 🛠️ Available Tools
 
@@ -180,29 +169,21 @@ http://localhost:8787/{YOUR_API_KEY}/sse
 4. Push to the branch (`git push origin feature/amazing-feature`)
 5. Open a Pull Request
 
-## 🚨 Known Issues
+## ✅ Verification
 
-### MCP Protocol Implementation
-The server currently has a complete infrastructure but needs proper MCP protocol handshake implementation:
+### What Works 
+- ✅ Firecrawl-style URL routing (`/{API_KEY}/sse`)
+- ✅ Limitless API integration (test with `/test/{API_KEY}`)
+- ✅ Cloudflare Workers deployment with Durable Objects
+- ✅ API key validation and security
+- ✅ Proper MCP protocol implementation with JSON-RPC
+- ✅ All four MCP tools fully functional
+- ✅ SSE transport with proper handshake
 
-**What Works ✅**
-- Firecrawl-style URL routing (`/{API_KEY}/sse`)
-- Limitless API integration (test with `/test/{API_KEY}`)
-- Cloudflare Workers deployment
-- API key validation and security
-- All MCP tools are defined and functional
-
-**What Needs Fixing ❌**
-- MCP protocol handshake (currently returns permission errors)
-- Proper SSE transport implementation following MCP specification
-
-**Debugging Tools**
-- Test API connection: `GET /test/{YOUR_API_KEY}`
-- Debug SSE endpoint: `GET /debug/test/sse`
-- Health check: `GET /health`
-
-### Contributing to Fix
-The main issue is in `src/limitless-mcp.ts` - the MCP server needs to properly implement the MCP transport protocol handshake. Contributions welcome!
+### Testing Tools
+- **Health check**: `GET /health`
+- **API connection test**: `GET /test/{YOUR_API_KEY}`
+- **MCP Inspector**: Connect via `/{YOUR_API_KEY}/sse`
 
 ## 📄 License
 
@@ -226,3 +207,283 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 <p align="center">
   <strong>Built with ❤️ for the Limitless and MCP communities</strong>
 </p>
+
+## 🔧 Client Configuration
+
+### 📱 Claude Desktop
+
+**Location:** 
+- macOS: `~/Library/Application Support/Claude/claude_desktop_config.json`
+- Windows: `%APPDATA%\Claude\claude_desktop_config.json`
+
+**Configuration:**
+```json
+{
+  "mcpServers": {
+    "limitless-lifelog": {
+      "command": "npx",
+      "args": [
+        "mcp-remote",
+        "https://limitless-mcp-remote.genaijake.workers.dev/sse?api_key=YOUR_LIMITLESS_API_KEY"
+      ]
+    }
+  }
+}
+```
+
+**Alternative (using environment variables):**
+```json
+{
+  "mcpServers": {
+    "limitless-lifelog": {
+      "command": "npx",
+      "args": [
+        "mcp-remote",
+        "https://limitless-mcp-remote.genaijake.workers.dev/sse?api_key=${LIMITLESS_API_KEY}"
+      ],
+      "env": {
+        "LIMITLESS_API_KEY": "your-actual-api-key-here"
+      }
+    }
+  }
+}
+```
+
+### 🖱️ Cursor
+
+**Location:** `~/.cursor/mcp.json` (create if it doesn't exist)
+
+**Configuration:**
+```json
+{
+  "mcpServers": {
+    "limitless-lifelog": {
+      "command": "npx",
+      "args": [
+        "mcp-remote",
+        "https://limitless-mcp-remote.genaijake.workers.dev/mcp?api_key=YOUR_LIMITLESS_API_KEY"
+      ]
+    }
+  }
+}
+```
+
+**One-line setup:** Paste this into Cursor when prompted:
+```bash
+npx mcp-remote https://limitless-mcp-remote.genaijake.workers.dev/mcp?api_key=YOUR_LIMITLESS_API_KEY
+```
+
+### 🌊 Windsurf (Codeium)
+
+**Location:** `~/.codeium/windsurf/mcp_config.json`
+
+**Configuration:**
+```json
+{
+  "mcpServers": {
+    "limitless-lifelog": {
+      "command": "npx",
+      "args": [
+        "mcp-remote",
+        "https://limitless-mcp-remote.genaijake.workers.dev/sse?api_key=YOUR_LIMITLESS_API_KEY"
+      ]
+    }
+  }
+}
+```
+
+### 💻 VS Code (with GitHub Copilot)
+
+**Location:** User Settings JSON (`Ctrl+Shift+P` → "Preferences: Open User Settings (JSON)")
+
+**Configuration:**
+```json
+{
+  "mcp": {
+    "servers": {
+      "limitless-lifelog": {
+        "command": "npx",
+        "args": [
+          "mcp-remote",
+          "https://limitless-mcp-remote.genaijake.workers.dev/sse?api_key=YOUR_LIMITLESS_API_KEY"
+        ]
+      }
+    }
+  }
+}
+```
+
+### 🔗 Cline (VS Code Extension)
+
+**Setup:** Cline → MCP Servers → Configure MCP Servers
+
+**Configuration:**
+```json
+{
+  "mcpServers": {
+    "limitless-lifelog": {
+      "command": "npx",
+      "args": [
+        "mcp-remote",
+        "https://limitless-mcp-remote.genaijake.workers.dev/sse?api_key=YOUR_LIMITLESS_API_KEY"
+      ]
+    }
+  }
+}
+```
+
+### ⚡ Zed (Preview)
+
+**Setup:** Assistant → Settings → Context Servers → Add Context Server
+
+**Configuration:**
+- **Name:** Limitless Lifelog
+- **Command:** 
+```bash
+npx mcp-remote https://limitless-mcp-remote.genaijake.workers.dev/sse?api_key=YOUR_LIMITLESS_API_KEY
+```
+
+### 🌐 Claude.ai (Web)
+
+**Setup:** Settings → Integrations → Add Integration
+
+**Server URL:**
+```
+https://limitless-mcp-remote.genaijake.workers.dev/mcp?api_key=YOUR_LIMITLESS_API_KEY
+```
+
+### 📱 Other Clients
+
+For clients not listed above, use this general pattern:
+
+**For JSON-based configuration:**
+```json
+{
+  "limitless-lifelog": {
+    "command": "npx",
+    "args": [
+      "mcp-remote",
+      "https://limitless-mcp-remote.genaijake.workers.dev/sse?api_key=YOUR_LIMITLESS_API_KEY"
+    ]
+  }
+}
+```
+
+**For one-line configuration:**
+```bash
+npx mcp-remote https://limitless-mcp-remote.genaijake.workers.dev/mcp?api_key=YOUR_LIMITLESS_API_KEY
+```
+
+## 🔐 API Key Setup
+
+1. **Get your Limitless API key:**
+   - Sign up at [Limitless.ai](https://limitless.ai)
+   - Go to your account settings
+   - Generate an API key
+
+2. **Replace `YOUR_LIMITLESS_API_KEY`** in the configurations above with your actual API key
+
+3. **Restart your MCP client** after configuration
+
+## 🛠️ Usage Examples
+
+Once configured, you can ask your AI assistant:
+
+- *"Show me my lifelogs from yesterday"*
+- *"What did I do last Tuesday?"*
+- *"Search my lifelogs for mentions of 'project meeting'"*
+- *"Delete the lifelog entry from this morning about coffee"*
+- *"What conversations did I have about AI this week?"*
+
+## 🔍 Transport Options
+
+### StreamableHttp (Recommended)
+- **URL:** `/mcp?api_key=YOUR_API_KEY`
+- **Best for:** Modern clients, better performance
+- **Supported by:** Cursor, Claude.ai, VS Code, newer MCP clients
+
+### SSE (Server-Sent Events)
+- **URL:** `/sse?api_key=YOUR_API_KEY`
+- **Best for:** Legacy compatibility
+- **Supported by:** Claude Desktop, Windsurf, older MCP clients
+
+## 🚨 Troubleshooting
+
+### Common Issues
+
+**1. "No tools available" or "Server not connecting"**
+- Verify your API key is correct
+- Check that you're using the right transport (SSE vs StreamableHttp)
+- Restart your MCP client completely
+
+**2. "Authentication failed"**
+- Ensure your Limitless API key is valid
+- Check for typos in the API key
+- Verify the API key has the necessary permissions
+
+**3. "Command not found: npx"**
+- Install Node.js 18+ from [nodejs.org](https://nodejs.org)
+- Verify `npx` is available in your terminal
+
+**4. Client-specific issues:**
+- **Claude Desktop:** Restart the app after config changes
+- **Cursor:** Check `~/.cursor/mcp.json` exists and is valid JSON
+- **VS Code:** Ensure GitHub Copilot extension is installed
+
+### Debug Steps
+
+1. **Test the server directly:**
+```bash
+curl "https://limitless-mcp-remote.genaijake.workers.dev/health"
+```
+
+2. **Test with your API key:**
+```bash
+curl "https://limitless-mcp-remote.genaijake.workers.dev/test/YOUR_API_KEY"
+```
+
+3. **Check MCP connection:**
+```bash
+npx mcp-remote https://limitless-mcp-remote.genaijake.workers.dev/sse?api_key=YOUR_API_KEY
+```
+
+## 🏗️ Development
+
+### Local Development
+
+```bash
+# Clone the repository
+git clone https://github.com/jakerains/limitless-mcp-remote.git
+cd limitless-mcp-remote
+
+# Install dependencies
+npm install
+
+# Start development server
+npm run dev
+```
+
+### Deploy to Cloudflare Workers
+
+```bash
+# Deploy to production
+npm run deploy
+```
+
+## 📄 License
+
+MIT License - see [LICENSE](LICENSE) file for details.
+
+## 🤝 Contributing
+
+Contributions welcome! Please read our contributing guidelines and submit pull requests.
+
+## 🔗 Links
+
+- **Limitless.ai:** [https://limitless.ai](https://limitless.ai)
+- **MCP Protocol:** [https://modelcontextprotocol.io](https://modelcontextprotocol.io)
+- **Cloudflare Workers:** [https://workers.cloudflare.com](https://workers.cloudflare.com)
+
+---
+
+**Need help?** Open an issue on GitHub or contact the maintainers.

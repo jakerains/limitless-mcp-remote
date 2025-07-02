@@ -1,215 +1,94 @@
+import { McpAgent } from 'agents/mcp';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import { z } from 'zod';
 import { LimitlessAPIClient } from './limitless-client';
-import { SSETransport } from './sse-transport';
 
-export class LimitlessMCP implements DurableObject {
-  private server: McpServer;
+export class LimitlessMCP extends McpAgent {
   private limitlessClient?: LimitlessAPIClient;
-
-  constructor(private state: DurableObjectState, private env: any) {
-    this.server = new McpServer({
-      name: 'Limitless Lifelog MCP Server',
-      version: '1.0.0',
-    });
-
-    this.setupTools();
-  }
+  private apiKey?: string;
+  
+  server = new McpServer({
+    name: 'Limitless Lifelog MCP Server',
+    version: '1.0.0',
+  });
 
   async fetch(request: Request): Promise<Response> {
     const url = new URL(request.url);
     
-    // Check if this is a debug request
-    const isDebug = url.pathname.includes('/debug/');
+    // Extract API key before calling parent fetch
+    let apiKey: string | undefined;
     
-    if (isDebug) {
-      console.log('LimitlessMCP: Debug mode - received request to', url.pathname);
-      console.log('LimitlessMCP: Request method:', request.method);
-      console.log('LimitlessMCP: Request headers:', Object.fromEntries(request.headers.entries()));
-      
-      if (url.pathname.endsWith('/sse')) {
-        return this.handleDebugSSE(request);
+    // 1. Check URL path pattern /{API_KEY}/sse or /{API_KEY}/mcp
+    const pathMatch = url.pathname.match(/^\/([a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12})\/(sse|mcp)$/i);
+    if (pathMatch) {
+      apiKey = pathMatch[1];
+      console.log('API key found in URL path:', apiKey);
+    }
+    
+    // 2. Check query parameter ?api_key=
+    if (!apiKey) {
+      apiKey = url.searchParams.get('api_key') || undefined;
+      if (apiKey) {
+        console.log('API key found in query params:', apiKey);
       }
-      
-      return new Response(JSON.stringify({
-        debug: true,
-        message: 'Debug endpoint active',
-        pathname: url.pathname,
-        method: request.method
-      }), {
-        headers: { 'Content-Type': 'application/json' }
-      });
     }
     
-    // Extract API key from headers
-    const apiKey = request.headers.get('X-Limitless-API-Key');
+    // 3. Check request headers
+    if (!apiKey) {
+      apiKey = request.headers.get('X-Limitless-API-Key') || undefined;
+      if (apiKey) {
+        console.log('API key found in headers');
+      }
+    }
     
-    if (apiKey && !this.limitlessClient) {
-      this.setAPIKey(apiKey);
+    // Store the API key for use in init
+    if (apiKey) {
+      this.apiKey = apiKey;
     }
-
-    // Handle SSE connection
-    if (url.pathname.startsWith('/sse')) {
-      return this.handleSSE(request);
-    }
-
-    return new Response('Not found', { status: 404 });
+    
+    // Call parent fetch
+    return super.fetch(request);
   }
 
-  private async handleSSE(request: Request): Promise<Response> {
-    if (!this.limitlessClient) {
-      return new Response(JSON.stringify({
-        error: 'API key required',
-        message: 'Limitless API key must be provided'
-      }), {
-        status: 400,
-        headers: { 'Content-Type': 'application/json' }
-      });
-    }
-
-    const { readable, writable } = new TransformStream();
-    const writer = writable.getWriter();
-    const encoder = new TextEncoder();
-
-    // Set up SSE headers
-    const response = new Response(readable, {
-      headers: {
-        'Content-Type': 'text/event-stream',
-        'Cache-Control': 'no-cache',
-        'Connection': 'keep-alive',
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Headers': 'Content-Type',
-      },
+  async init(props?: { 
+    user?: { apiKey?: string }; 
+    url?: URL;
+    request?: Request;
+  }) {
+    console.log('LimitlessMCP init called with props:', {
+      hasProps: !!props,
+      hasUser: !!props?.user,
+      hasUrl: !!props?.url,
+      hasRequest: !!props?.request,
+      urlPathname: props?.url?.pathname,
+      urlSearch: props?.url?.search,
+      storedApiKey: !!this.apiKey
     });
-
-    // Handle incoming messages from the request body
-    if (request.body) {
-      const reader = request.body.getReader();
-      
-      const processMessages = async () => {
-        try {
-          while (true) {
-            const { done, value } = await reader.read();
-            if (done) break;
-
-            const text = new TextDecoder().decode(value);
-            const lines = text.split('\n');
-            
-            for (const line of lines) {
-              if (line.trim() && !line.startsWith('event:') && !line.startsWith('data:')) {
-                try {
-                  const message = JSON.parse(line);
-                  const response = await this.server.handleRequest(message);
-                  
-                  if (response) {
-                    await writer.write(encoder.encode(`data: ${JSON.stringify(response)}\n\n`));
-                  }
-                } catch (err) {
-                  console.error('Error processing message:', err);
-                }
-              }
-            }
-          }
-        } catch (error) {
-          console.error('Error reading request stream:', error);
-        } finally {
-          await writer.close();
-        }
-      };
-
-      // Process messages in the background
-      processMessages();
-    } else {
-      // If no body, just keep connection alive
-      setTimeout(async () => {
-        await writer.close();
-      }, 30000); // Close after 30 seconds of inactivity
-    }
-
-    return response;
-  }
-
-  private async handleDebugSSE(request: Request): Promise<Response> {
-    console.log('LimitlessMCP: Starting debug SSE connection');
     
-    const { readable, writable } = new TransformStream();
-    const writer = writable.getWriter();
-    const encoder = new TextEncoder();
-
-    // Send initial SSE headers
-    const response = new Response(readable, {
-      headers: {
-        'Content-Type': 'text/event-stream',
-        'Cache-Control': 'no-cache',
-        'Connection': 'keep-alive',
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Headers': 'Content-Type',
-      },
-    });
-
-    // Send initial message
-    await writer.write(encoder.encode(`data: {"type":"debug","message":"Debug SSE connection established"}\n\n`));
-
-    // Log what we receive
-    if (request.body) {
-      const reader = request.body.getReader();
-      
-      const processMessages = async () => {
-        try {
-          while (true) {
-            const { done, value } = await reader.read();
-            if (done) {
-              console.log('LimitlessMCP: Debug request stream ended');
-              break;
-            }
-
-            const text = new TextDecoder().decode(value);
-            console.log('LimitlessMCP: Debug received data:', text);
-            
-            // Echo back what we received
-            await writer.write(encoder.encode(`data: {"type":"echo","received":"${text.replace(/"/g, '\\"')}"}\n\n`));
-          }
-        } catch (error) {
-          console.error('LimitlessMCP: Debug error reading stream:', error);
-          await writer.write(encoder.encode(`data: {"type":"error","message":"${error}"}\n\n`));
-        } finally {
-          await writer.close();
-        }
-      };
-
-      processMessages();
+    // Use the stored API key from fetch
+    let apiKey = this.apiKey;
+    
+    // Also check props for completeness
+    if (!apiKey && props?.user?.apiKey) {
+      apiKey = props.user.apiKey;
+      console.log('API key found in props.user');
+    }
+    
+    if (apiKey) {
+      this.limitlessClient = new LimitlessAPIClient(apiKey);
+      console.log('Limitless client initialized with API key');
     } else {
-      console.log('LimitlessMCP: Debug - No request body');
-      await writer.write(encoder.encode(`data: {"type":"info","message":"No request body received"}\n\n`));
-      setTimeout(async () => {
-        await writer.close();
-      }, 10000);
+      console.log('WARNING: No API key found, client not initialized');
     }
 
-    return response;
-  }
-
-  setAPIKey(apiKey: string) {
-    this.limitlessClient = new LimitlessAPIClient(apiKey);
+    // Register all the tools
+    this.setupTools();
   }
 
   private setupTools() {
     this.server.tool(
       'limitless_get_lifelogs',
       'Retrieve lifelogs from Limitless with optional filtering',
-      {
-        timezone: z.string().optional().describe('IANA timezone specifier (defaults to UTC)'),
-        date: z.string().optional().describe('Retrieve entries for a specific date (YYYY-MM-DD)'),
-        start: z.string().optional().describe('Start datetime for entries (ISO 8601)'),
-        end: z.string().optional().describe('End datetime for entries (ISO 8601)'),
-        cursor: z.string().optional().describe('Pagination cursor'),
-        direction: z.enum(['asc', 'desc']).optional().describe('Sort direction (default: desc)'),
-        includeMarkdown: z.boolean().optional().describe('Include markdown content (default: true)'),
-        includeHeadings: z.boolean().optional().describe('Include headings (default: true)'),
-        limit: z.number().optional().describe('Maximum number of entries'),
-        isStarred: z.boolean().optional().describe('Filter for starred lifelogs only'),
-      },
-      async (params) => {
+      async (params: any) => {
         if (!this.limitlessClient) {
           throw new Error('Limitless API client not initialized. API key required.');
         }
@@ -247,10 +126,12 @@ export class LimitlessMCP implements DurableObject {
     this.server.tool(
       'limitless_get_lifelog_by_id',
       'Retrieve a specific lifelog entry by ID',
-      {
-        id: z.string().describe('The unique identifier of the lifelog entry'),
-      },
-      async ({ id }) => {
+      async (params: any) => {
+        const { id } = params;
+        if (!id) {
+          throw new Error('ID parameter is required');
+        }
+        
         if (!this.limitlessClient) {
           throw new Error('Limitless API client not initialized. API key required.');
         }
@@ -283,10 +164,12 @@ export class LimitlessMCP implements DurableObject {
     this.server.tool(
       'limitless_delete_lifelog',
       'Permanently delete a specific lifelog entry',
-      {
-        id: z.string().describe('The unique identifier of the lifelog entry to delete'),
-      },
-      async ({ id }) => {
+      async (params: any) => {
+        const { id } = params;
+        if (!id) {
+          throw new Error('ID parameter is required');
+        }
+        
         if (!this.limitlessClient) {
           throw new Error('Limitless API client not initialized. API key required.');
         }
@@ -319,29 +202,24 @@ export class LimitlessMCP implements DurableObject {
     this.server.tool(
       'limitless_search_lifelogs',
       'Search lifelogs with date/time filters and content matching',
-      {
-        query: z.string().optional().describe('Search query to match against lifelog content'),
-        startDate: z.string().optional().describe('Start date for search range (YYYY-MM-DD)'),
-        endDate: z.string().optional().describe('End date for search range (YYYY-MM-DD)'),
-        isStarred: z.boolean().optional().describe('Filter for starred lifelogs only'),
-        limit: z.number().optional().describe('Maximum number of results (default: 10)'),
-      },
-      async ({ query, startDate, endDate, isStarred, limit = 10 }) => {
+      async (params: any) => {
+        const { query, startDate, endDate, isStarred, limit = 10 } = params;
+        
         if (!this.limitlessClient) {
           throw new Error('Limitless API client not initialized. API key required.');
         }
 
         try {
-          const params: any = {
+          const apiParams: any = {
             limit,
             includeMarkdown: true,
           };
 
-          if (startDate) params.start = `${startDate}T00:00:00Z`;
-          if (endDate) params.end = `${endDate}T23:59:59Z`;
-          if (isStarred !== undefined) params.isStarred = isStarred;
+          if (startDate) apiParams.start = `${startDate}T00:00:00Z`;
+          if (endDate) apiParams.end = `${endDate}T23:59:59Z`;
+          if (isStarred !== undefined) apiParams.isStarred = isStarred;
 
-          const response = await this.limitlessClient.getLifelogs(params);
+          const response = await this.limitlessClient.getLifelogs(apiParams);
           
           let filteredLogs = response.data.lifelogs;
           
