@@ -1,0 +1,9 @@
+{
+  "servers": {
+    "limitless-local": {
+      "command": "node",
+      "args": ["-e", "console.log('Use the deployed server instead')"],
+      "env": {}
+    }
+  }
+}

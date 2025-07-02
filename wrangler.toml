@@ -1,0 +1,13 @@
+name = "limitless-mcp-remote"
+main = "src/index.ts"
+compatibility_date = "2024-11-06"
+compatibility_flags = ["nodejs_compat"]
+
+[durable_objects]
+bindings = [
+  { name = "LIMITLESS_MCP_AGENT", class_name = "LimitlessMCP", script_name = "limitless-mcp-remote" }
+]
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["LimitlessMCP"]
