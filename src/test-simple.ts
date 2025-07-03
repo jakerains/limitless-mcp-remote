@@ -6,10 +6,16 @@ export async function testLimitlessConnection(apiKey: string) {
     const client = new LimitlessAPIClient(apiKey);
     const response = await client.getLifelogs({ limit: 1 });
     
+    console.log('\n✅ Test passed! Retrieved lifelogs:', {
+      count: response.meta?.lifelogs?.count || 0,
+      hasLogs: response.data.lifelogs.length > 0,
+      firstLogTitle: response.data.lifelogs[0]?.title,
+    });
+
     return {
       success: true,
       data: {
-        count: response.meta.lifelogs.count,
+        count: response.meta?.lifelogs?.count || 0,
         hasLifelogs: response.data.lifelogs.length > 0,
         firstLifelog: response.data.lifelogs[0]?.title || 'No lifelogs'
       }

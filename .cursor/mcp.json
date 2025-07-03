@@ -1,14 +1,18 @@
 {
   "mcpServers": {
+    "limitless-remote": {
+      "command": "npx",
+      "args": ["mcp-remote", "https://limitless-mcp-remote.genaijake.workers.dev/sse?api_key=53d7793f-2e9f-4db2-883c-1cd490eeba5b"]
+    },
     "cloudflare-docs": {
       "command": "npx",
       "args": ["mcp-remote", "https://docs.mcp.cloudflare.com/sse"]
     },
-    "cloudflare-workers-bindings": {
+    "cloudflare-bindings": {
       "command": "npx",
       "args": ["mcp-remote", "https://bindings.mcp.cloudflare.com/sse"]
     },
-    "cloudflare-workers-builds": {
+    "cloudflare-builds": {
       "command": "npx",
       "args": ["mcp-remote", "https://builds.mcp.cloudflare.com/sse"]
     },
@@ -16,17 +20,45 @@
       "command": "npx",
       "args": ["mcp-remote", "https://observability.mcp.cloudflare.com/sse"]
     },
-    "cloudflare-browser": {
-      "command": "npx",
-      "args": ["mcp-remote", "https://browser.mcp.cloudflare.com/sse"]
-    },
     "cloudflare-radar": {
       "command": "npx",
       "args": ["mcp-remote", "https://radar.mcp.cloudflare.com/sse"]
     },
+    "cloudflare-containers": {
+      "command": "npx",
+      "args": ["mcp-remote", "https://containers.mcp.cloudflare.com/sse"]
+    },
+    "cloudflare-browser": {
+      "command": "npx",
+      "args": ["mcp-remote", "https://browser.mcp.cloudflare.com/sse"]
+    },
+    "cloudflare-logs": {
+      "command": "npx",
+      "args": ["mcp-remote", "https://logs.mcp.cloudflare.com/sse"]
+    },
+    "cloudflare-ai-gateway": {
+      "command": "npx",
+      "args": ["mcp-remote", "https://ai-gateway.mcp.cloudflare.com/sse"]
+    },
+    "cloudflare-autorag": {
+      "command": "npx",
+      "args": ["mcp-remote", "https://autorag.mcp.cloudflare.com/sse"]
+    },
+    "cloudflare-auditlogs": {
+      "command": "npx",
+      "args": ["mcp-remote", "https://auditlogs.mcp.cloudflare.com/sse"]
+    },
     "cloudflare-dns-analytics": {
       "command": "npx",
       "args": ["mcp-remote", "https://dns-analytics.mcp.cloudflare.com/sse"]
+    },
+    "cloudflare-dex": {
+      "command": "npx",
+      "args": ["mcp-remote", "https://dex.mcp.cloudflare.com/sse"]
+    },
+    "cloudflare-casb": {
+      "command": "npx",
+      "args": ["mcp-remote", "https://casb.mcp.cloudflare.com/sse"]
     },
     "cloudflare-graphql": {
       "command": "npx",

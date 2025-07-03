@@ -5,9 +5,14 @@ compatibility_flags = ["nodejs_compat"]
 
 [durable_objects]
 bindings = [
-  { name = "LIMITLESS_MCP_AGENT", class_name = "LimitlessMCP", script_name = "limitless-mcp-remote" }
+  { name = "MCP_OBJECT", class_name = "LimitlessMCP" }
 ]
 
 [[migrations]]
 tag = "v1"
-new_sqlite_classes = ["LimitlessMCP"]
+new_classes = ["LimitlessMCP"]
+
+[[kv_namespaces]]
+binding = "OAUTH_STORAGE"
+id = "5896b24addba42c99c0e099490ef5a4e"
+preview_id = "oauth_storage_preview"

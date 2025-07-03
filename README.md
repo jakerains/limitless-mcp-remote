@@ -1,17 +1,18 @@
 # 🔗 Limitless MCP Remote Server
 
-> A remote Model Context Protocol (MCP) server that provides AI assistants with secure access to your Limitless lifelog data.
+> A remote Model Context Protocol (MCP) server that provides AI assistants with secure, timezone-aware access to your Limitless lifelog data.
 
-[![Deploy to Cloudflare Workers](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/genaijake/limitless-mcp-remote)
+[![Deploy to Cloudflare Workers](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/jakerains/limitless-mcp-remote)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Status: Production Ready](https://img.shields.io/badge/Status-Production%20Ready-green.svg)](https://github.com/genaijake/limitless-mcp-remote)
+[![Status: Production Ready](https://img.shields.io/badge/Status-Production%20Ready-green.svg)](https://github.com/jakerains/limitless-mcp-remote)
 
-> ✅ **Status**: Fully functional MCP server ready for production use with your Limitless API key.
+> ✅ **Status**: Fully functional timezone-aware MCP server ready for production use (Updated: July 2nd, 2025)
 
 ## ✨ Features
 
+- 🌍 **Timezone-Aware** - Proper timezone support using IANA timezone identifiers
 - 🔐 **Secure API Key Authentication** - Your data stays private with your own API key
-- 🌐 **Remote MCP Protocol** - Works with Claude, AI assistants, and any MCP client
+- 🌐 **Remote MCP Protocol** - Works with Claude Desktop, Cursor, and any MCP client
 - ⚡ **Cloudflare Workers** - Global edge deployment for low latency
 - 🔍 **Rich Search & Filtering** - Find lifelogs by date, content, starred status
 - 📊 **Complete CRUD Operations** - Read, search, and delete lifelog entries
@@ -25,28 +26,46 @@ https://limitless-mcp-remote.genaijake.workers.dev
 ```
 
 **Supported Transports:**
-- **StreamableHttp** (recommended): `/mcp?api_key=YOUR_API_KEY`
-- **SSE** (legacy): `/sse?api_key=YOUR_API_KEY`
+- **SSE** (Server-Sent Events): `/sse?api_key=YOUR_API_KEY`
+- **Custom Path**: `/{YOUR_API_KEY}/sse` (Firecrawl-style routing)
 
 ## 🛠️ Available Tools
 
-| Tool | Description | Parameters |
+| Tool | Description | Key Parameters |
 |------|-------------|------------|
-| `limitless_get_lifelogs` | Retrieve lifelogs with filtering | `timezone`, `date`, `start`, `end`, `cursor`, `direction`, `includeMarkdown`, `limit`, `isStarred` |
-| `limitless_get_lifelog_by_id` | Get a specific lifelog entry | `id` |
-| `limitless_delete_lifelog` | Permanently delete a lifelog | `id` |
-| `limitless_search_lifelogs` | Search with text and date filters | `query`, `startDate`, `endDate`, `isStarred`, `limit` |
+| `get_lifelogs` | Retrieve lifelogs from a specific date | `date` (YYYY-MM-DD), `timezone` (IANA timezone, e.g., "America/Los_Angeles") |
+| `get_lifelog_by_id` | Get a specific lifelog entry | `id` (string) |
+| `search_lifelogs` | Search lifelogs with text query | `query` (search terms), `limit` (max results) |
+| `delete_lifelog` | Permanently delete a lifelog | `id` (string) |
+
+### Timezone Support
+
+The server now properly supports timezone-aware queries using the Limitless API's native timezone handling:
+
+- **Timezone Parameter**: Use IANA timezone identifiers (e.g., "America/Los_Angeles", "Europe/London", "Asia/Tokyo")
+- **Date Format**: YYYY-MM-DD format for dates
+- **Default**: If no timezone specified, defaults to UTC
 
 ## 📋 Examples
 
-### Get Recent Lifelogs
+### Get Today's Lifelogs (Timezone-Aware)
 ```json
 {
-  "tool": "limitless_get_lifelogs",
+  "tool": "get_lifelogs",
   "parameters": {
-    "limit": 5,
-    "direction": "desc",
-    "includeMarkdown": true
+    "date": "2025-07-02",
+    "timezone": "America/Los_Angeles"
+  }
+}
+```
+
+### Get Yesterday's Lifelogs
+```json
+{
+  "tool": "get_lifelogs",
+  "parameters": {
+    "date": "2025-07-01",
+    "timezone": "America/New_York"
   }
 }
 ```
@@ -54,26 +73,118 @@ https://limitless-mcp-remote.genaijake.workers.dev
 ### Search for Specific Content
 ```json
 {
-  "tool": "limitless_search_lifelogs",
+  "tool": "search_lifelogs",
   "parameters": {
-    "query": "meeting",
-    "startDate": "2024-01-01",
-    "endDate": "2024-12-31",
+    "query": "meeting with team",
     "limit": 10
   }
 }
 ```
 
-### Get Starred Lifelogs
+### Get Specific Lifelog by ID
 ```json
 {
-  "tool": "limitless_get_lifelogs",
+  "tool": "get_lifelog_by_id",
   "parameters": {
-    "isStarred": true,
-    "includeMarkdown": true
+    "id": "lifelog-entry-id-here"
   }
 }
 ```
+
+## 🔧 Client Configuration
+
+### 📱 Claude Desktop (Recommended Method)
+
+**🎉 NEW: Native Remote MCP Integration (BETA)**
+
+Claude Desktop now supports direct remote MCP connections! No more local proxy needed.
+
+1. Open Claude Desktop
+2. Go to **Settings** → **Integrations** 
+3. Click **"Add integration"**
+4. Fill in:
+   - **Integration name**: `Limitless Remote`
+   - **Integration URL**: `https://limitless-mcp-remote.genaijake.workers.dev/sse?api_key=YOUR_LIMITLESS_API_KEY`
+5. Click **"Add"**
+
+That's it! Claude will connect directly to the remote server.
+
+### 📱 Claude Desktop (Legacy Method)
+
+**Location:** 
+- macOS: `~/Library/Application Support/Claude/claude_desktop_config.json`
+- Windows: `%APPDATA%\Claude\claude_desktop_config.json`
+
+**Configuration:**
+```json
+{
+  "mcpServers": {
+    "limitless-remote": {
+      "command": "npx",
+      "args": [
+        "mcp-remote",
+        "https://limitless-mcp-remote.genaijake.workers.dev/sse?api_key=YOUR_LIMITLESS_API_KEY"
+      ]
+    }
+  }
+}
+```
+
+### 🖱️ Cursor
+
+**Location:** `~/.cursor/mcp.json` (create if it doesn't exist)
+
+**Configuration:**
+```json
+{
+  "mcpServers": {
+    "limitless-remote": {
+      "command": "npx",
+      "args": [
+        "mcp-remote",
+        "https://limitless-mcp-remote.genaijake.workers.dev/sse?api_key=YOUR_LIMITLESS_API_KEY"
+      ]
+    }
+  }
+}
+```
+
+## 🛠️ Usage Examples
+
+Once configured, you can ask your AI assistant:
+
+- *"Show me my lifelogs from yesterday in Pacific Time"* 
+- *"What did I do last Tuesday in EST?"*
+- *"Search my lifelogs for mentions of 'project meeting'"*
+- *"Get my lifelogs from July 1st, 2025 in London time"*
+- *"What conversations did I have about AI this week?"*
+
+## ✅ Verification & Testing
+
+### Current Status (July 2nd, 2025)
+- ✅ **Server Online**: `https://limitless-mcp-remote.genaijake.workers.dev`
+- ✅ **Timezone Support**: IANA timezone identifiers working properly
+- ✅ **All Tools Functional**: get_lifelogs, search_lifelogs, get_lifelog_by_id, delete_lifelog
+- ✅ **Claude Desktop Integration**: Both native and legacy methods working
+- ✅ **API Validation**: Proper integration with Limitless API v1
+
+### Testing Commands
+
+**Health Check:**
+```bash
+curl "https://limitless-mcp-remote.genaijake.workers.dev/health"
+```
+
+**Test with API Key:**
+```bash
+curl "https://limitless-mcp-remote.genaijake.workers.dev/test/YOUR_API_KEY"
+```
+
+**MCP Inspector:**
+```bash
+npx @modelcontextprotocol/inspector@latest
+```
+Then connect to: `https://limitless-mcp-remote.genaijake.workers.dev/sse?api_key=YOUR_API_KEY`
 
 ## 🔧 Development
 
@@ -212,6 +323,30 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ### 📱 Claude Desktop
 
+Claude Desktop now supports OAuth authentication for remote MCP servers! You have two options:
+
+#### Option 1: OAuth Integration (Recommended) 🎉
+
+**New in 2025: Claude Desktop now has a simplified integration UI!**
+
+1. Open Claude Desktop
+2. Go to **Settings** → **Integrations**
+3. Click **"Add integration"** (or **"Add custom integration"**)
+4. Fill in:
+   - **Integration name**: `Limitless` (or any name you prefer)
+   - **Integration URL**: `https://limitless-mcp-remote.genaijake.workers.dev`
+5. Click **"Add"**
+
+That's it! When you first use Limitless tools, Claude will:
+- Automatically discover the OAuth configuration
+- Open a browser window for authentication
+- Prompt you to enter your Limitless API key
+- Store the OAuth token securely (your API key is never saved in files)
+
+**Note:** This new UI is currently in BETA and available for Max, Team, and Enterprise plans, with Pro plan support coming soon.
+
+#### Option 2: Manual Configuration (Legacy)
+
 **Location:** 
 - macOS: `~/Library/Application Support/Claude/claude_desktop_config.json`
 - Windows: `%APPDATA%\Claude\claude_desktop_config.json`
@@ -226,24 +361,6 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
         "mcp-remote",
         "https://limitless-mcp-remote.genaijake.workers.dev/sse?api_key=YOUR_LIMITLESS_API_KEY"
       ]
-    }
-  }
-}
-```
-
-**Alternative (using environment variables):**
-```json
-{
-  "mcpServers": {
-    "limitless-lifelog": {
-      "command": "npx",
-      "args": [
-        "mcp-remote",
-        "https://limitless-mcp-remote.genaijake.workers.dev/sse?api_key=${LIMITLESS_API_KEY}"
-      ],
-      "env": {
-        "LIMITLESS_API_KEY": "your-actual-api-key-here"
-      }
     }
   }
 }
@@ -349,8 +466,10 @@ npx mcp-remote https://limitless-mcp-remote.genaijake.workers.dev/sse?api_key=YO
 
 **Server URL:**
 ```
-https://limitless-mcp-remote.genaijake.workers.dev/mcp?api_key=YOUR_LIMITLESS_API_KEY
+https://limitless-mcp-remote.genaijake.workers.dev/mcp
 ```
+
+The web interface will handle OAuth authentication automatically!
 
 ### 📱 Other Clients
 
@@ -374,16 +493,39 @@ For clients not listed above, use this general pattern:
 npx mcp-remote https://limitless-mcp-remote.genaijake.workers.dev/mcp?api_key=YOUR_LIMITLESS_API_KEY
 ```
 
-## 🔐 API Key Setup
+## 🔐 Authentication Methods
 
-1. **Get your Limitless API key:**
-   - Sign up at [Limitless.ai](https://limitless.ai)
-   - Go to your account settings
-   - Generate an API key
+### OAuth 2.0 (Recommended for Claude Desktop)
 
-2. **Replace `YOUR_LIMITLESS_API_KEY`** in the configurations above with your actual API key
+The server supports OAuth 2.0 authentication flow, which is more secure than embedding API keys:
 
-3. **Restart your MCP client** after configuration
+1. **No API key in config files** - More secure
+2. **Browser-based authentication** - Enter your API key in a secure web form
+3. **Token-based access** - Uses temporary access tokens
+4. **Automatic token refresh** - Seamless long-term access
+
+**How it works:**
+- Claude Desktop discovers OAuth support via `/.well-known/mcp-oauth-metadata`
+- When you use a Limitless tool, Claude opens `/oauth/authorize` in your browser
+- You enter your Limitless API key in the secure form
+- The server exchanges your API key for an OAuth token
+- Claude stores only the OAuth token, never your actual API key
+- All subsequent requests use the OAuth token automatically
+
+### API Key Authentication
+
+For clients that don't support OAuth, you can use API keys:
+
+1. **URL Parameter**: `?api_key=YOUR_API_KEY`
+2. **Custom Header**: `X-Limitless-API-Key: YOUR_API_KEY`
+3. **Authorization Header**: `Authorization: Bearer YOUR_API_KEY`
+
+### Getting Your Limitless API Key
+
+1. Sign up at [Limitless.ai](https://limitless.ai)
+2. Go to your account settings
+3. Generate an API key
+4. Keep it secure!
 
 ## 🛠️ Usage Examples
 
@@ -426,7 +568,7 @@ Once configured, you can ask your AI assistant:
 - Verify `npx` is available in your terminal
 
 **4. Client-specific issues:**
-- **Claude Desktop:** Restart the app after config changes
+- **Claude Desktop:** Try the OAuth integration method instead of manual config
 - **Cursor:** Check `~/.cursor/mcp.json` exists and is valid JSON
 - **VS Code:** Ensure GitHub Copilot extension is installed
 
